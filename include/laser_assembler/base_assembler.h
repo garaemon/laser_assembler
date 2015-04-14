@@ -132,6 +132,7 @@ private:
   //! \brief Specify how much to downsample the data. A value of 1 preserves all the data. 3 would keep 1/3 of the data.
   unsigned int downsample_factor_ ;
 
+  int max_queue_size_;
 } ;
 
 template <class T>
@@ -146,6 +147,8 @@ BaseAssembler<T>::BaseAssembler(const std::string& max_size_param_name) : privat
   tf_ = new tf::TransformListener(n_, ros::Duration(tf_cache_time_secs));
   ROS_INFO("TF Cache Time: %f Seconds", tf_cache_time_secs) ;
 
+  private_ns_.param("max_queue_size_", max_queue_size_, 10) ;
+  
   // ***** Set max_scans *****
   const int default_max_scans = 400 ;
   int tmp_max_scans ;
@@ -197,8 +200,8 @@ void BaseAssembler<T>::start(const std::string& in_topic_name)
     ROS_ERROR("assembler::start() was called twice!. This is bad, and could leak memory") ;
   else
   {
-    scan_sub_.subscribe(n_, in_topic_name, 10);
-    tf_filter_ = new tf::MessageFilter<T>(scan_sub_, *tf_, fixed_frame_, 10);
+    scan_sub_.subscribe(n_, in_topic_name, max_queue_size_);
+    tf_filter_ = new tf::MessageFilter<T>(scan_sub_, *tf_, fixed_frame_, max_queue_size_);
     tf_filter_->registerCallback( boost::bind(&BaseAssembler<T>::msgCallback, this, _1) );
   }
 }
@@ -211,11 +214,11 @@ void BaseAssembler<T>::start()
     ROS_ERROR("assembler::start() was called twice!. This is bad, and could leak memory") ;
   else
   {
-    scan_sub_.subscribe(n_, "bogus", 10);
-    tf_filter_ = new tf::MessageFilter<T>(scan_sub_, *tf_, fixed_frame_, 10);
+    scan_sub_.subscribe(n_, "bogus", max_queue_size_);
+    tf_filter_ = new tf::MessageFilter<T>(scan_sub_, *tf_, fixed_frame_, max_queue_size_);
     tf_filter_->registerCallback( boost::bind(&BaseAssembler<T>::msgCallback, this, _1) );
   }
-}
+} 
 
 template <class T>
 BaseAssembler<T>::~BaseAssembler()
